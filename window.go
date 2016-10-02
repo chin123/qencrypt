@@ -3,9 +3,10 @@ package main
 import (
 	"crypto/rand"
 	"io/ioutil"
-
+	"golang.org/x/crypto/pbkdf2"
 	"github.com/andlabs/ui"
 	"golang.org/x/crypto/nacl/secretbox"
+	"crypto/sha512"
 )
 
 func check(err error) {
@@ -19,12 +20,13 @@ func getfilename(window *ui.Window) string {
 	return filename
 }
 
-func encrypt(filename string) {
-	var secretKey [32]byte
-	_, err1 := rand.Read(secretKey[:])
-	check(err1)
-
+func encrypt(filename string, pass string) {
+	var salt [16]byte
 	var nonce [24]byte
+	var secretKey [32]byte
+
+	_, err1 := rand.Read(salt[:])
+	check(err1)
 
 	_, err2 := rand.Read(nonce[:])
 	check(err2)
@@ -32,22 +34,20 @@ func encrypt(filename string) {
 	f, err := ioutil.ReadFile(filename)
 	check(err)
 
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 150000, 32, sha512.New)
+	copy(secretKey[:], secretbytes[:])
+
 	encrypted := secretbox.Seal(nonce[:], []byte(f), &nonce, &secretKey)
+	encrypted = append(salt[:],encrypted...)
 
 	writef := filename + ".encrypted"
 
 	err3 := ioutil.WriteFile(writef, encrypted, 0644)
 	check(err3)
 
-	passfile := filename + "-password.txt"
-
-	keyforfile := string(secretKey[:])
-
-	err3 = ioutil.WriteFile(passfile, []byte(keyforfile), 0644)
-	check(err3)
 }
 
-func decrypt(filename string, passname string) {
+func decrypt(filename string, pass string) {
 
 	f, err := ioutil.ReadFile(filename)
 	check(err)
@@ -55,14 +55,16 @@ func decrypt(filename string, passname string) {
 	fb := []byte(f)
 
 	var decryptNonce [24]byte
+	var salt [16]byte
 	var secretKey [32]byte
 
-	pass, err := ioutil.ReadFile(passname)
-	check(err)
+	copy(salt[:], fb[:16])
 
-	copy(secretKey[:], pass)
-	copy(decryptNonce[:], fb[:24])
-	decrypted, ok := secretbox.Open([]byte{}, fb[24:], &decryptNonce, &secretKey)
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 150000, 32, sha512.New)
+	copy(secretKey[:], secretbytes[:])
+
+	copy(decryptNonce[:], fb[16:40])
+	decrypted, ok := secretbox.Open([]byte{}, fb[40:], &decryptNonce, &secretKey)
 	if !ok {
 		panic("decryption error " + filename)
 	}
@@ -73,15 +75,13 @@ func decrypt(filename string, passname string) {
 	check(err2)
 }
 
-func setopt(opt bool, optenc *ui.Checkbox, optdec *ui.Checkbox, enc, dec, pass *ui.Button) {
+func setopt(opt bool, optenc *ui.Checkbox, optdec *ui.Checkbox, enc, dec *ui.Button) {
 	if opt && optenc.Checked() {
 		enc.Enable()
 		dec.Disable()
-		pass.Disable()
 	} else if optdec.Checked() {
 		dec.Enable()
 		enc.Disable()
-		pass.Enable()
 	}
 }
 
@@ -97,10 +97,10 @@ func main() {
 
 		sep2 := ui.NewHorizontalSeparator()
 
+		passlabel := ui.NewLabel("Password:")
+		passfield := ui.NewEntry()
+
 		encbutton := ui.NewButton("Encrypt")
-
-		passbutton := ui.NewButton("Open Password File")
-
 		decbutton := ui.NewButton("Decrypt")
 
 		box := ui.NewVerticalBox()
@@ -111,39 +111,36 @@ func main() {
 		box.Append(optenc, false)
 		box.Append(optdec, false)
 		box.Append(sep2, false)
+		box.Append(passlabel, false)
+		box.Append(passfield, false)
 		box.Append(encbutton, false)
-		box.Append(passbutton, false)
 		box.Append(decbutton, false)
 
 		window := ui.NewWindow("Qencrypt", 300, 150, false)
 		window.SetChild(box)
 
-		var filename, passname string
+		var filename string
 
 		openbutton.OnClicked(func(*ui.Button) {
 			filename = getfilename(window)
 		})
 
-		passbutton.OnClicked(func(*ui.Button) {
-			passname = getfilename(window)
-		})
-
 		optenc.OnToggled(func(*ui.Checkbox) {
-			setopt(true, optenc, optdec, encbutton, decbutton, passbutton)
+			setopt(true, optenc, optdec, encbutton, decbutton)
 		})
 
 		optdec.OnToggled(func(*ui.Checkbox) {
-			setopt(false, optenc, optdec, encbutton, decbutton, passbutton)
+			setopt(false, optenc, optdec, encbutton, decbutton)
 		})
 
 		encbutton.OnClicked(func(*ui.Button) {
-			encrypt(filename)
-			message := "The file " + filename + " has been successfully encrypted. The password file which is required for decryption is also placed in the same folder. Please keep it safely as it is required to decrypt the file. Thank you!"
+			encrypt(filename, passfield.Text())
+			message := "The file " + filename + " has been successfully encrypted. Thank you!"
 			ui.MsgBox(window, "Encryption Successful!", message)
 		})
 
 		decbutton.OnClicked(func(*ui.Button) {
-			decrypt(filename, passname)
+			decrypt(filename, passfield.Text())
 			message := "The file " + filename + " has been successfully decrypted."
 			ui.MsgBox(window, "Decryption Successful!", message)
 		})
