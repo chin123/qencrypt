@@ -34,11 +34,13 @@ func encrypt(filename string, pass string) {
 	f, err := ioutil.ReadFile(filename)
 	check(err)
 
-	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 150000, 32, sha512.New)
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 3 * 100000, 32, sha512.New)
 	copy(secretKey[:], secretbytes[:])
 
 	encrypted := secretbox.Seal(nonce[:], []byte(f), &nonce, &secretKey)
-	encrypted = append(salt[:],encrypted...)
+	// 3 is for determining the number of iters needed in the pbkdf2 function. multiply by 100,000 to get the iterations.
+	saltiters := append(salt[:], byte(3))
+	encrypted = append(saltiters,encrypted...)
 
 	writef := filename + ".encrypted"
 
@@ -47,7 +49,7 @@ func encrypt(filename string, pass string) {
 
 }
 
-func decrypt(filename string, pass string) {
+func decrypt(filename string, pass string) bool{
 
 	f, err := ioutil.ReadFile(filename)
 	check(err)
@@ -60,61 +62,50 @@ func decrypt(filename string, pass string) {
 
 	copy(salt[:], fb[:16])
 
-	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 150000, 32, sha512.New)
+	iters := int(fb[16])
+
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], iters * 100000, 32, sha512.New)
 	copy(secretKey[:], secretbytes[:])
 
-	copy(decryptNonce[:], fb[16:40])
-	decrypted, ok := secretbox.Open([]byte{}, fb[40:], &decryptNonce, &secretKey)
+	copy(decryptNonce[:], fb[17:41])
+	decrypted, ok := secretbox.Open([]byte{}, fb[41:], &decryptNonce, &secretKey)
 	if !ok {
-		panic("decryption error " + filename)
+		return false
 	}
 
 	writef := filename[:len(filename)-10]
 
 	err2 := ioutil.WriteFile(writef, decrypted, 0644)
 	check(err2)
-}
-
-func setopt(opt bool, optenc *ui.Checkbox, optdec *ui.Checkbox, enc, dec *ui.Button) {
-	if opt && optenc.Checked() {
-		enc.Enable()
-		dec.Disable()
-	} else if optdec.Checked() {
-		dec.Enable()
-		enc.Disable()
-	}
+	return true
 }
 
 func main() {
 	err := ui.Main(func() {
-		filelabel := ui.NewLabel("Choose a file:")
+		filelabel := ui.NewLabel("Choose a file to encrypt/decrypt:")
 		openbutton := ui.NewButton("Open")
 
-		sep1 := ui.NewHorizontalSeparator()
+		sep := ui.NewHorizontalSeparator()
 
-		optenc := ui.NewCheckbox("Encrypt")
-		optdec := ui.NewCheckbox("Decrypt")
-
-		sep2 := ui.NewHorizontalSeparator()
-
-		passlabel := ui.NewLabel("Password:")
+		passlabel := ui.NewLabel("Password for encrypting/decrypting:")
 		passfield := ui.NewEntry()
 
 		encbutton := ui.NewButton("Encrypt")
 		decbutton := ui.NewButton("Decrypt")
 
 		box := ui.NewVerticalBox()
+		buttonbox := ui.NewHorizontalBox()
 
 		box.Append(filelabel, false)
 		box.Append(openbutton, false)
-		box.Append(sep1, false)
-		box.Append(optenc, false)
-		box.Append(optdec, false)
-		box.Append(sep2, false)
+		box.Append(sep, false)
 		box.Append(passlabel, false)
 		box.Append(passfield, false)
-		box.Append(encbutton, false)
-		box.Append(decbutton, false)
+		buttonbox.Append(encbutton, true)
+		buttonbox.Append(decbutton, true)
+		box.Append(buttonbox,false)
+		buttonbox.SetPadded(true)
+		box.SetPadded(true)
 
 		window := ui.NewWindow("Qencrypt", 300, 150, false)
 		window.SetChild(box)
@@ -125,14 +116,6 @@ func main() {
 			filename = getfilename(window)
 		})
 
-		optenc.OnToggled(func(*ui.Checkbox) {
-			setopt(true, optenc, optdec, encbutton, decbutton)
-		})
-
-		optdec.OnToggled(func(*ui.Checkbox) {
-			setopt(false, optenc, optdec, encbutton, decbutton)
-		})
-
 		encbutton.OnClicked(func(*ui.Button) {
 			encrypt(filename, passfield.Text())
 			message := "The file " + filename + " has been successfully encrypted. Thank you!"
@@ -140,9 +123,13 @@ func main() {
 		})
 
 		decbutton.OnClicked(func(*ui.Button) {
-			decrypt(filename, passfield.Text())
-			message := "The file " + filename + " has been successfully decrypted."
-			ui.MsgBox(window, "Decryption Successful!", message)
+			result := decrypt(filename, passfield.Text())
+			if result {
+				message := "The file " + filename + " has been successfully decrypted."
+				ui.MsgBox(window, "Decryption Successful!", message)
+			} else {
+				ui.MsgBox(window, "Decryption Unsuccessful.", "The password entered was wrong. Please try again.")
+			}
 		})
 
 		window.OnClosing(func(*ui.Window) bool {
