@@ -9,10 +9,10 @@ It uses nacl's 'secretbox' for encryption and https://github.com/andlabs/ui for 
 ![Main Interface of qencrypt windows](screenshots/windowsscreen.png)
 
 #Building
-1. Assuming you have go installed and have set your GOPATH, run:    
+1. Make sure you have all the dependencies needed for building https://github.com/andlabs/ui  
+2. Assuming you have go installed and have set your GOPATH, run:    
 `go get github.com/chin123/qencrypt`  
-2. Change into the qencrypt directory.  
-3. Run `go build`  
+3. Run `go build github.com/chin123/qencrypt`  
 
 #Usage
 
