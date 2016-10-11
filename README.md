@@ -4,7 +4,8 @@ It uses nacl's 'secretbox' for encryption and https://github.com/andlabs/ui for 
 [Download](https://github.com/chin123/qencrypt/releases/download/v1.0/)
 
 #Screenshot
-![Main Interface of qencrypt](screenshots/main.png)
+![Main Interface of qencrypt linux](screenshots/main.png)  
+![Main Interface of qencrypt windows](screenshots/windowsscreen.png)
 
 #Usage
 
