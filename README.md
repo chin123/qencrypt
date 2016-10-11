@@ -8,6 +8,12 @@ It uses nacl's 'secretbox' for encryption and https://github.com/andlabs/ui for 
 
 ![Main Interface of qencrypt windows](screenshots/windowsscreen.png)
 
+#Building
+1. Assuming you have go installed and have set your GOPATH, run:    
+`go get github.com/chin123/qencrypt`  
+2. Change into the qencrypt directory.  
+3. Run `go build`  
+
 #Usage
 
 1. Open a file which you want to encrypt or decrypt using the 'Open' button.
