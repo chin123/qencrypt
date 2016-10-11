@@ -1,7 +1,7 @@
 #About
 Qencrypt is a small gui program which helps you encrypt small files.  
 It uses nacl's 'secretbox' for encryption and https://github.com/andlabs/ui for the ui.  
-[Download for linux 64 bit](https://github.com/chin123/qencrypt/releases/download/v1.0/qencrypt)
+[Download](https://github.com/chin123/qencrypt/releases/download/v1.0/)
 
 #Screenshot
 ![Main Interface of qencrypt](screenshots/main.png)
