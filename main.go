@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/rand"
 	"crypto/sha512"
+	"errors"
 	"github.com/andlabs/ui"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/pbkdf2"
 	"io/ioutil"
-	"errors"
 )
 
 func check(err error) {
@@ -16,20 +16,22 @@ func check(err error) {
 	}
 }
 
+// getfilename returns the whole filename for the file chosen by the user.
 func getfilename(window *ui.Window) string {
 	filename := ui.OpenFile(window)
 	return filename
 }
 
+// encrypt encrypts the given file. If successful, it returns nil else it returns an error.
 func encrypt(filename string, pass string) error {
 	var salt [16]byte
 	var nonce [24]byte
 	var secretKey [32]byte
 
-	_, err1 := rand.Read(salt[:])
+	_, err1 := rand.Read(salt[:]) // reads in a random salt.
 	check(err1)
 
-	_, err2 := rand.Read(nonce[:])
+	_, err2 := rand.Read(nonce[:]) // reads in a random nonce.
 	check(err2)
 
 	f, err := ioutil.ReadFile(filename)
@@ -37,7 +39,7 @@ func encrypt(filename string, pass string) error {
 		return errors.New("Error: Unable to read the file.")
 	}
 
-	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 3*100000, 32, sha512.New)
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 3*100000, 32, sha512.New) // generates the key from the password.
 	copy(secretKey[:], secretbytes[:])
 
 	encrypted := secretbox.Seal(nonce[:], []byte(f), &nonce, &secretKey)
@@ -52,39 +54,39 @@ func encrypt(filename string, pass string) error {
 	return nil
 }
 
+// decrypt decrypts the given file. If successful, it returns nil else it returns an error.
 func decrypt(filename string, pass string) error {
 
-	f, err := ioutil.ReadFile(filename)
+	fb, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.New("Error: Unable to read the file.")
 	}
-
-	fb := []byte(f)
 
 	var decryptNonce [24]byte
 	var salt [16]byte
 	var secretKey [32]byte
 
-	copy(salt[:], fb[:16])
+	copy(salt[:], fb[:16]) // the salt is stored in the 1st 16 bytes of the file.
 
-	iters := int(fb[16])
+	iters := int(fb[16]) // the number of iterations (* 100000) needed for the pbkdf2 function.
 
 	secretbytes := pbkdf2.Key([]byte(pass), salt[:], iters*100000, 32, sha512.New)
 	copy(secretKey[:], secretbytes[:])
 
-	copy(decryptNonce[:], fb[17:41])
+	copy(decryptNonce[:], fb[17:41]) //the nonce is stored after the slt and the number of iterations.
 	decrypted, ok := secretbox.Open([]byte{}, fb[41:], &decryptNonce, &secretKey)
 	if !ok {
 		return errors.New("Error: Unable to decrypt the file. Please check the password you entered and try again.")
 	}
 
-	writef := filename[:len(filename)-10]
+	writef := filename[:len(filename)-10] // removes the .encrypted extension.
 
 	err2 := ioutil.WriteFile(writef, decrypted, 0644)
 	check(err2)
 	return nil
 }
 
+// NewWindow genrates the window to be displayed.
 func NewWindow() {
 	filelabel := ui.NewLabel("Choose a file to encrypt/decrypt:")
 	openbutton := ui.NewButton("Open")
@@ -122,7 +124,7 @@ func NewWindow() {
 
 	encbutton.OnClicked(func(*ui.Button) {
 		err := encrypt(filename, passfield.Text())
-		if  err != nil {
+		if err != nil {
 			ui.MsgBox(window, "Encryption Unsucessful.", err.Error())
 		} else {
 			message := "The file " + filename + " has been successfully encrypted. Thank you!"
@@ -155,4 +157,3 @@ func main() {
 		panic(err)
 	}
 }
-
