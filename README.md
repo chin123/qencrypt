@@ -1,10 +1,18 @@
 #About
 Qencrypt is a small gui program which helps you encrypt small files.  
 It uses nacl's 'secretbox' for encryption and https://github.com/andlabs/ui for the ui.  
-[Download for linux 64 bit](https://github.com/chin123/qencrypt/releases/download/v1.0/qencrypt)
+[Download](https://github.com/chin123/qencrypt/releases/)
 
-#Screenshot
-![Main Interface of qencrypt](screenshots/main.png)
+#Screenshots
+![Main Interface of qencrypt linux](screenshots/main.png)  
+
+![Main Interface of qencrypt windows](screenshots/windowsscreen.png)
+
+#Building
+1. Make sure you have all the dependencies needed for building https://github.com/andlabs/ui  
+2. Assuming you have go installed and have set your GOPATH, run:    
+`go get github.com/chin123/qencrypt`  
+3. Run `go build github.com/chin123/qencrypt`  
 
 #Usage
 
