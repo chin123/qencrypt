@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 )
 
+import _ "github.com/andlabs/ui/winmanifest"
+
 func check(err error) {
 	if err != nil {
 		panic(err)
