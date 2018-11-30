@@ -118,13 +118,16 @@ func decrypt(filename string, pass string) error {
 
 // NewWindow genrates the window to be displayed.
 func NewWindow() {
-	filelabel := ui.NewLabel("Choose a file to encrypt/decrypt:")
-	openbutton := ui.NewButton("Open")
-
+	filechosen := ui.NewLabel("File Chosen: None")
 	sep := ui.NewHorizontalSeparator()
 
+	filelabel := ui.NewLabel("Choose a file to encrypt/decrypt:")
+	openbutton := ui.NewButton("Open")
+	sep2 := ui.NewHorizontalSeparator()
+
+
 	passlabel := ui.NewLabel("Password for encrypting/decrypting:")
-	passfield := ui.NewEntry()
+	passfield := ui.NewPasswordEntry()
 
 	encbutton := ui.NewButton("Encrypt")
 	decbutton := ui.NewButton("Decrypt")
@@ -132,9 +135,11 @@ func NewWindow() {
 	box := ui.NewVerticalBox()
 	buttonbox := ui.NewHorizontalBox()
 
+	box.Append(filechosen, false)
+	box.Append(sep, false)
 	box.Append(filelabel, false)
 	box.Append(openbutton, false)
-	box.Append(sep, false)
+	box.Append(sep2, false)
 	box.Append(passlabel, false)
 	box.Append(passfield, false)
 	buttonbox.Append(encbutton, true)
@@ -150,6 +155,7 @@ func NewWindow() {
 
 	openbutton.OnClicked(func(*ui.Button) {
 		filename = getfilename(window)
+		filechosen.SetText("File Chosen: " + filename)
 	})
 
 	encbutton.OnClicked(func(*ui.Button) {
