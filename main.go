@@ -9,6 +9,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"golang.org/x/crypto/pbkdf2"
+	"crypto/sha512"
 )
 
 import _ "github.com/andlabs/ui/winmanifest"
@@ -41,7 +43,7 @@ func encrypt(filename string, pass string) error {
 	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 3*100000, 32, sha512.New) // generates the key from the password.
 	copy(key[:], secretbytes[:])
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(key[:])
 	check(err)
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
@@ -56,8 +58,8 @@ func encrypt(filename string, pass string) error {
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(f))
 
 	writef := filename + ".encrypted"
-	ciphertext = append(byte(3), ciphertext...)
-	ciphertext = append(salt[:], ciphertext...)
+	toprepend := append(salt[:], byte(3))
+	ciphertext = append(toprepend, ciphertext...)
 
 	err3 := ioutil.WriteFile(writef, []byte(base64.URLEncoding.EncodeToString(ciphertext)) , 0644)
 	check(err3)
@@ -75,17 +77,20 @@ func decrypt(filename string, pass string) error {
 	var key [32]byte
 	var salt [16]byte
 
-	copy(salt[:], fb[:16]) // the salt is stored in the 1st 16 bytes of the file.
 
-	iters := int(fb[16]) // the number of iterations (* 100000) needed for the pbkdf2 function.
+	temp, _ := base64.URLEncoding.DecodeString(string(fb[:]))
+	contents := []byte(temp)
+
+	copy(salt[:], contents[:16]) // the salt is stored in the 1st 16 bytes of the file.
+
+	iters := int(contents[16]) // the number of iterations (* 100000) needed for the pbkdf2 function.
+	ciphertext := contents[17:] // the rest of the file will be the ciphertext
 
 
 	secretbytes := pbkdf2.Key([]byte(pass), salt[:], iters*100000, 32, sha512.New)
 	copy(key[:], secretbytes[:])
 
-	ciphertext, _ := base64.URLEncoding.DecodeString(string(fb[17:]))
-
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		panic(err)
 	}
