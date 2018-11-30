@@ -27,16 +27,22 @@ func getfilename(window *ui.Window) string {
 
 // encrypt encrypts the given file. If successful, it returns nil else it returns an error.
 func encrypt(filename string, pass string) error {
+	var key [32]byte
+	var salt [16]byte
+
+	_, err := rand.Read(salt[:]) // reads in a random salt.
+	check(err)
+
 	f, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.New("Error: Unable to read the file.")
 	}
-	key := []byte(pass)
+
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], 3*100000, 32, sha512.New) // generates the key from the password.
+	copy(key[:], secretbytes[:])
 
 	block, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 
 	// The IV needs to be unique, but not secure. Therefore it's common to
 	// include it at the beginning of the ciphertext.
@@ -50,6 +56,8 @@ func encrypt(filename string, pass string) error {
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(f))
 
 	writef := filename + ".encrypted"
+	ciphertext = append(byte(3), ciphertext...)
+	ciphertext = append(salt[:], ciphertext...)
 
 	err3 := ioutil.WriteFile(writef, []byte(base64.URLEncoding.EncodeToString(ciphertext)) , 0644)
 	check(err3)
@@ -58,15 +66,24 @@ func encrypt(filename string, pass string) error {
 
 // decrypt decrypts the given file. If successful, it returns nil else it returns an error.
 func decrypt(filename string, pass string) error {
-	key := []byte(pass)
 
 	fb, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.New("Error: Unable to read the file.")
 	}
 
+	var key [32]byte
+	var salt [16]byte
 
-	ciphertext, _ := base64.URLEncoding.DecodeString(string(fb[:]))
+	copy(salt[:], fb[:16]) // the salt is stored in the 1st 16 bytes of the file.
+
+	iters := int(fb[16]) // the number of iterations (* 100000) needed for the pbkdf2 function.
+
+
+	secretbytes := pbkdf2.Key([]byte(pass), salt[:], iters*100000, 32, sha512.New)
+	copy(key[:], secretbytes[:])
+
+	ciphertext, _ := base64.URLEncoding.DecodeString(string(fb[17:]))
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
