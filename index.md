@@ -3,9 +3,7 @@ Qencrypt is a small gui program which helps you encrypt your files.
 [Download!](https://github.com/chin123/qencrypt/releases/)
 
 # Screenshots
-![Main Interface of qencrypt linux](https://github.com/chin123/qencrypt/blob/master/screenshots/main.png?raw=true)  
-
-![Main Interface of qencrypt windows](https://github.com/chin123/qencrypt/blob/master/screenshots/windowsscreen.png?raw=true)
+![Main Interface of qencrypt linux](https://github.com/chin123/qencrypt/blob/master/screenshots/mainscreen.png?raw=true)  
 
 # Usage
 1. Open a file which you want to encrypt or decrypt using the 'Open' button.
