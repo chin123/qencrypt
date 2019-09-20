@@ -1,6 +1,0 @@
-{
-  "name": "Qencrypt",
-  "tagline": "An easy way to encrypt small files.",
-  "body": "#About\r\nQencrypt is a small gui program which helps you encrypt your files.    \r\n[Download!](https://github.com/chin123/qencrypt/releases/)\r\n\r\n#Screenshots\r\n![Main Interface of qencrypt linux](https://github.com/chin123/qencrypt/blob/master/screenshots/main.png?raw=true)  \r\n\r\n![Main Interface of qencrypt windows](https://github.com/chin123/qencrypt/blob/master/screenshots/windowsscreen.png?raw=true)\r\n\r\n#Usage\r\n1. Open a file which you want to encrypt or decrypt using the 'Open' button.\r\n2. Type in a password in the password field which you want to use to encrypt or decrypt the file.\r\n3. Choose whether you want to encrypt or decrypt the file by clicking the 'Encrypt' or 'Decrypt' buttons.\r\n\r\nThats it!\r\n\r\n\r\n#Building from source\r\n1. Make sure you have all the dependencies needed for building https://github.com/andlabs/ui  \r\n2. Assuming you have go installed and have set your GOPATH, run:    \r\n`go get github.com/chin123/qencrypt`  \r\n3. Run `go build github.com/chin123/qencrypt`  \r\n\r\n#License\r\nGPLv3. For more information, please see the LICENSE file.\r\n",
-  "note": "Don't delete this file! It's used internally to help with page regeneration."
-}
